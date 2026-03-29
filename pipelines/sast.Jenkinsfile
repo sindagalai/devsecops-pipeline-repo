@@ -2,11 +2,19 @@ pipeline {
     agent any
 
     stages {
+        stage('Load Helpers') {
+            steps {
+                script {
+                    gitHelper = load 'vars/gitCheckout.groovy'
+                    sonarHelper = load 'vars/sonarScan.groovy'
+                }
+            }
+        }
 
         stage('Checkout Code') {
             steps {
                 script {
-                    gitCheckout('https://github.com/sindagalai/DevSecOpsTest.git', 'main')
+                    gitHelper.call('https://github.com/sindagalai/DevSecOpsTest.git', 'main')
                 }
             }
         }
@@ -14,10 +22,9 @@ pipeline {
         stage('SAST Scan - SonarQube') {
             steps {
                 script {
-                    sonarScan()
+                    sonarHelper.call()
                 }
             }
         }
-
     }
 }
