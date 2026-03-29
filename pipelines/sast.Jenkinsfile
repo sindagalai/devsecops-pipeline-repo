@@ -1,30 +1,48 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Load Helpers') {
-            steps {
-                script {
-                    gitHelper = load 'vars/gitCheckout.groovy'
-                    sonarHelper = load 'vars/sonarScan.groovy'
-                }
-            }
-        }
+    environment {
+        SONAR_TOKEN = credentials('sonar-token')
+    }
 
+    stages {
         stage('Checkout Code') {
             steps {
                 script {
-                    gitHelper.call('https://github.com/sindagalai/DevSecOpsTest.git', 'main')
+                    gitCheckout()
                 }
             }
         }
 
-        stage('SAST Scan - SonarQube') {
+        stage('Run SonarQube Scan') {
             steps {
                 script {
-                    sonarHelper.call()
+                    sonarScan()
                 }
             }
+        }
+
+        stage('Generate SAST Report') {
+            steps {
+                script {
+                    generateSastReport()
+                }
+            }
+        }
+
+        stage('Archive SAST Report') {
+            steps {
+                archiveArtifacts artifacts: 'reports/sast/**', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'SAST pipeline completed successfully.'
+        }
+        failure {
+            echo 'SAST pipeline failed.'
         }
     }
 }

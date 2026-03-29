@@ -1,6 +1,5 @@
-def call(String repoUrl, String branch) {
-    echo "Clonage du repo ${repoUrl} sur la branche ${branch}"
-    git branch: branch, url: repoUrl
+def call() {
+    git branch: 'main',
+        credentialsId: 'github-creds',
+        url: 'https://github.com/sindagalai/DevSecOpsTest.git'
 }
-
-return this
