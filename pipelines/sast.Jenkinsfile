@@ -8,25 +8,34 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    gitCheckout()
-                }
+                git branch: 'main',
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/sindagalai/DevSecOpsTest.git'
             }
         }
 
         stage('Run SonarQube Scan') {
             steps {
-                script {
-                    sonarScan()
-                }
+                sh """
+                    mvn clean verify sonar:sonar \
+                    -Dsonar.projectKey=devsecops-test \
+                    -Dsonar.projectName=DevSecOpsTest \
+                    -Dsonar.token=${SONAR_TOKEN}
+                """
             }
         }
 
         stage('Generate SAST Report') {
             steps {
-                script {
-                    generateSastReport()
-                }
+                sh '''
+                    mkdir -p reports/sast
+
+                    curl -s -u ${SONAR_TOKEN}: "http://localhost:9000/api/issues/search?componentKeys=devsecops-test&ps=500" -o reports/sast/sonar-report.json
+
+                    echo "SAST Report - SonarQube" > reports/sast/summary.txt
+                    echo "Project: devsecops-test" >> reports/sast/summary.txt
+                    echo "Generated on: $(date)" >> reports/sast/summary.txt
+                '''
             }
         }
 
