@@ -28,7 +28,7 @@ def call() {
         echo "<table><tr><th>Severity</th><th>File</th><th>Line</th><th>Message</th></tr>" >> reports/sast/sonar-report.html
 
         # Ajouter des lignes dans le tableau HTML avec des couleurs en fonction de la gravité
-        jq -r '.issues[] | "<tr class=\(.severity | ascii_downcase)><td>\(.severity)</td><td>\(.component)</td><td>\(.line)</td><td>\(.message)</td></tr>"' reports/sast/sonar-report.json >> reports/sast/sonar-report.html
+        jq -r '.issues[] | "<tr class=\'\(.severity | ascii_downcase)\'><td>\(.severity)</td><td>\(.component)</td><td>\(.line)</td><td>\(.message)</td></tr>"' reports/sast/sonar-report.json >> reports/sast/sonar-report.html
 
         echo "</table></body></html>" >> reports/sast/sonar-report.html
     '''
