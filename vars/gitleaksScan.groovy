@@ -9,3 +9,5 @@ def call() {
           --report-path=reports/sast/gitleaks-report.json || true
     '''
 }
+
+return this
