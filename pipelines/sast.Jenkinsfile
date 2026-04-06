@@ -6,6 +6,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 dir('source-code') {
@@ -46,18 +47,47 @@ pipeline {
                     sh '''
                         mkdir -p reports/sast
 
+                        # Télécharger le rapport SonarQube
                         curl -s -u ${SONAR_TOKEN}: "http://localhost:9000/api/issues/search?componentKeys=devsecops-test&ps=500" -o reports/sast/sonar-report.json
 
-                        echo "SAST Report - SonarQube + Gitleaks" > reports/sast/summary.txt
-                        echo "Project: devsecops-test" >> reports/sast/summary.txt
-                        echo "Generated on: $(date)" >> reports/sast/summary.txt
-
-                        SONAR_TOTAL=$(jq '.total' reports/sast/sonar-report.json 2>/dev/null || echo 0)
-                        GITLEAKS_TOTAL=$(jq 'length' reports/sast/gitleaks-report.json 2>/dev/null || echo 0)
-
+                        # Création du fichier summary
+                        echo "==============================" > reports/sast/summary.txt
+                        echo "     SAST SECURITY REPORT     " >> reports/sast/summary.txt
+                        echo "==============================" >> reports/sast/summary.txt
+                        echo "Project       : devsecops-test" >> reports/sast/summary.txt
+                        echo "Generated on  : $(date)" >> reports/sast/summary.txt
                         echo "" >> reports/sast/summary.txt
-                        echo "SonarQube Issues: $SONAR_TOTAL" >> reports/sast/summary.txt
+
+                        # Calcul SonarQube
+                        if [ -f reports/sast/sonar-report.json ]; then
+                            SONAR_TOTAL=$(jq '.total // 0' reports/sast/sonar-report.json)
+                        else
+                            SONAR_TOTAL=0
+                        fi
+
+                        # Calcul Gitleaks
+                        if [ -f reports/sast/gitleaks-report.json ]; then
+                            GITLEAKS_TOTAL=$(jq 'length' reports/sast/gitleaks-report.json)
+                        else
+                            GITLEAKS_TOTAL=0
+                        fi
+
+                        # Résultats
+                        echo "---------- RESULTS -----------" >> reports/sast/summary.txt
+                        echo "SonarQube Issues : $SONAR_TOTAL" >> reports/sast/summary.txt
                         echo "Gitleaks Findings: $GITLEAKS_TOTAL" >> reports/sast/summary.txt
+
+                        echo "--------------------------------" >> reports/sast/summary.txt
+
+                        # Indicateur sécurité
+                        if [ "$GITLEAKS_TOTAL" -gt 0 ]; then
+                            echo "❌ Sensitive data detected!" >> reports/sast/summary.txt
+                        else
+                            echo "✅ No secrets detected" >> reports/sast/summary.txt
+                        fi
+
+                        echo "--------------------------------" >> reports/sast/summary.txt
+                        echo "End of Report" >> reports/sast/summary.txt
                     '''
                 }
             }
