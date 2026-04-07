@@ -98,40 +98,113 @@ pipeline {
                         echo "" >> reports/sast/summary.txt
                         echo "End of Report" >> reports/sast/summary.txt
 
-                        # Création du summary.html
+                        # Création du summary.html amélioré
                         cat <<EOF > reports/sast/summary.html
 <html>
 <head>
     <title>SAST Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 30px;
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+            color: #1f4e79;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        h2 {
+            margin-top: 0;
+            color: #1f4e79;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8fafc;
+        }
+        .status-ok {
+            color: green;
+            font-weight: bold;
+        }
+        .status-warning {
+            color: orange;
+            font-weight: bold;
+        }
+        .meta {
+            font-size: 15px;
+            line-height: 1.8;
+        }
+    </style>
 </head>
 <body>
+<div class="container">
+
     <h1>SAST SECURITY REPORT</h1>
-    <p><strong>Project:</strong> devsecops-test</p>
-    <p><strong>Generated on:</strong> $(date)</p>
 
-    <h2>SonarQube</h2>
-    <ul>
-        <li>Total Issues: $SONAR_TOTAL</li>
-        <li>Vulnerabilities: $VULN</li>
-        <li>Bugs: $BUGS</li>
-        <li>Code Smells: $SMELLS</li>
-    </ul>
+    <div class="card">
+        <div class="meta">
+            <strong>Project:</strong> devsecops-test<br>
+            <strong>Generated on:</strong> $(date)
+        </div>
+    </div>
 
-    <h2>Gitleaks</h2>
-    <ul>
-        <li>Total Findings: $GITLEAKS_TOTAL</li>
-    </ul>
+    <div class="card">
+        <h2>SonarQube Results</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Total Issues</td><td>$SONAR_TOTAL</td></tr>
+            <tr><td>Vulnerabilities</td><td>$VULN</td></tr>
+            <tr><td>Bugs</td><td>$BUGS</td></tr>
+            <tr><td>Code Smells</td><td>$SMELLS</td></tr>
+        </table>
+    </div>
 
-    <h2>Final Status</h2>
+    <div class="card">
+        <h2>Gitleaks Results</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Total Findings</td><td>$GITLEAKS_TOTAL</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Final Status</h2>
 EOF
 
                         if [ "$GITLEAKS_TOTAL" -gt 0 ] || [ "$VULN" -gt 0 ]; then
-                            echo "    <p>[WARNING] Security issues detected</p>" >> reports/sast/summary.html
+                            echo '        <p class="status-warning">[WARNING] Security issues detected</p>' >> reports/sast/summary.html
                         else
-                            echo "    <p>[OK] No critical issues</p>" >> reports/sast/summary.html
+                            echo '        <p class="status-ok">[OK] No critical issues</p>' >> reports/sast/summary.html
                         fi
 
                         cat <<EOF >> reports/sast/summary.html
+    </div>
+
+</div>
 </body>
 </html>
 EOF
