@@ -1,34 +1,78 @@
 version: '3.8'
 
 services:
+  # Service pour Jenkins (controller)
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins-controller
     restart: unless-stopped
     ports:
-      - "8081:8080"  # Utilise un autre port que ton Jenkins actuel
-      - "50001:50000" # Port pour la connexion entre l'agent et Jenkins
+      - "8082:8080"  # Utilise le port 8082 pour Jenkins (éviter le conflit avec ton Jenkins actuel)
+      - "50001:50000" # Port pour la communication entre l'agent et Jenkins
     volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home:/var/jenkins_home  # Volume pour persister les données Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock  # Donne accès à Docker sur l'hôte
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # Désactiver l'assistant de configuration de Jenkins
+    depends_on:
+      - sonarqube  # Assure-toi que SonarQube est lancé avant Jenkins
 
+  # Service pour SonarQube
+  sonarqube:
+    image: sonarqube:latest  # Utilise l'image officielle SonarQube
+    container_name: sonarqube
+    restart: unless-stopped
+    ports:
+      - "9001:9000"  # Utilise le port 9001 pour SonarQube (éviter le conflit avec l'ancien SonarQube)
+    environment:
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://db:5432/sonar  # Connexion à la base de données PostgreSQL
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data  # Volume pour persister les données de SonarQube
+      - sonarqube_extensions:/opt/sonarqube/extensions  # Extensions de SonarQube
+
+  # Service pour la base de données PostgreSQL de SonarQube
+  db:
+    image: postgres:alpine  # Utilisation de PostgreSQL pour SonarQube
+    container_name: sonarqube-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data  # Volume pour persister la base de données
+
+  # Service pour Gitleaks (scan de secrets dans le code)
+  gitleaks:
+    image: zricethezav/gitleaks:latest  # Utilisation de l'image officielle Gitleaks
+    container_name: gitleaks
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Permet à Gitleaks d'utiliser Docker (si nécessaire)
+    environment:
+      - GITLEAKS_CONF_PATH=/etc/gitleaks/config.toml  # Chemin vers le fichier de configuration de Gitleaks
+    entrypoint: ["gitleaks", "detect", "--repo-path=/mnt/repo", "--config=/etc/gitleaks/config.toml"]
+
+  # Service pour l'agent Jenkins
   jenkins-agent:
     build:
-      context: ./agent  # Le Dockerfile se trouve dans ./agent
+      context: ./agent  # Construction de l'image à partir du Dockerfile dans ./agent
     container_name: jenkins-agent
     restart: unless-stopped
     user: root
     environment:
-      - JENKINS_URL=http://jenkins-controller:8080
-      - JENKINS_AGENT_NAME=docker-agent
-      - JENKINS_SECRET=REMPLACER_PAR_VOTRE_SECRET  # Remplacer par le secret réel
+      - JENKINS_URL=http://jenkins-controller:8080  # L'URL de Jenkins
+      - JENKINS_AGENT_NAME=docker-agent  # Nom de l'agent
+      - JENKINS_SECRET=REMPLACER_PAR_VOTRE_SECRET  # Le secret d'authentification de l'agent (à remplacer)
       - JENKINS_WEB_SOCKET=true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock  # Permet à l'agent de communiquer avec Docker
     depends_on:
       - jenkins
+      - sonarqube  # S'assure que SonarQube et Jenkins sont lancés avant l'agent
 
 volumes:
   jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_db_data:
