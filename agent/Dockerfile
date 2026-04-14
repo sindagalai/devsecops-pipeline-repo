@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Installer Trivy pour les scans SCA (Software Composition Analysis)
-RUN wget https://github.com/aquasecurity/trivy/releases/download/v0.21.0/trivy_0.21.0_Linux-64bit.deb \
-    && dpkg -i trivy_0.21.0_Linux-64bit.deb \
-    && rm trivy_0.21.0_Linux-64bit.deb
+RUN wget -O /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_Linux-64bit.deb \
+    && dpkg -i /tmp/trivy.deb \
+    && rm /tmp/trivy.deb
 
 # Installer le Sonar Scanner pour l'analyse SonarQube
 RUN wget -O /tmp/sonar-scanner.zip https://github.com/SonarSource/sonar-scanner-cli/releases/download/4.6.2.2472/sonar-scanner-cli-4.6.2.2472-linux.zip \
