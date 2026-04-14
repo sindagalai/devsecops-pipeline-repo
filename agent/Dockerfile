@@ -16,11 +16,6 @@ RUN apt-get update && apt-get install -y \
     docker.io \
     && rm -rf /var/lib/apt/lists/*
 
-# Installer Trivy pour les scans SCA (Software Composition Analysis)
-RUN wget -O /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_Linux-64bit.deb \
-    && dpkg -i /tmp/trivy.deb \
-    && rm /tmp/trivy.deb
-
 # Installer le Sonar Scanner pour l'analyse SonarQube
 RUN wget -O /tmp/sonar-scanner.zip https://github.com/SonarSource/sonar-scanner-cli/releases/download/4.6.2.2472/sonar-scanner-cli-4.6.2.2472-linux.zip \
     && unzip /tmp/sonar-scanner.zip -d /opt \
@@ -29,6 +24,11 @@ RUN wget -O /tmp/sonar-scanner.zip https://github.com/SonarSource/sonar-scanner-
 # Définir les variables d'environnement pour SonarQube
 ENV SONAR_SCANNER_HOME=/opt/sonar-scanner-4.6.2.2472-linux
 ENV PATH=$PATH:$SONAR_SCANNER_HOME/bin
+
+# Installer Gitleaks pour scanner les secrets dans les dépôts
+RUN wget -O /tmp/gitleaks.tar.gz https://github.com/zricethezav/gitleaks/releases/download/v7.7.0/gitleaks-linux-amd64-v7.7.0.tar.gz \
+    && tar -xvzf /tmp/gitleaks.tar.gz -C /usr/local/bin/ \
+    && rm /tmp/gitleaks.tar.gz
 
 # Exposer le répertoire de travail
 WORKDIR /home/jenkins/agent
