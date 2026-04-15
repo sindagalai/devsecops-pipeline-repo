@@ -7,72 +7,30 @@ services:
     container_name: jenkins-controller
     restart: unless-stopped
     ports:
-      - "8082:8080"
-      - "50001:50000"
+      - "8082:8080"  # Utilise le port 8082 pour Jenkins (éviter le conflit avec ton Jenkins actuel)
+      - "50001:50000" # Port pour la communication entre l'agent et Jenkins
     volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home:/var/jenkins_home  # Volume pour persister les données Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock  # Donne accès à Docker sur l'hôte
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
-    depends_on:
-      - sonarqube
-
-  # Service pour SonarQube
-  sonarqube:
-    image: sonarqube:latest
-    container_name: sonarqube
-    restart: unless-stopped
-    ports:
-      - "9001:9000"
-    environment:
-      - SONARQUBE_JDBC_URL=jdbc:postgresql://db:5432/sonar
-    volumes:
-      - sonarqube_data:/opt/sonarqube/data
-      - sonarqube_extensions:/opt/sonarqube/extensions
-
-  # Base de données PostgreSQL pour SonarQube
-  db:
-    image: postgres:alpine
-    container_name: sonarqube-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=sonar
-      - POSTGRES_PASSWORD=sonar
-      - POSTGRES_DB=sonar
-    volumes:
-      - sonarqube_db_data:/var/lib/postgresql/data
-
-  # Gitleaks Service
-  gitleaks:
-    image: zricethezav/gitleaks:latest
-    container_name: gitleaks
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - GITLEAKS_CONF_PATH=/etc/gitleaks/config.toml
-    entrypoint: ["gitleaks", "detect", "--repo-path=/mnt/repo", "--config=/etc/gitleaks/config.toml"]
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # Désactiver l'assistant de configuration de Jenkins
 
   # Service pour l'agent Jenkins
   jenkins-agent:
     build:
-      context: ./agent
+      context: ./agent  # Construction de l'image à partir du Dockerfile dans ./agent
     container_name: jenkins-agent
     restart: unless-stopped
     user: root
     environment:
-      - JENKINS_URL=http://jenkins-controller:8080
-      - JENKINS_AGENT_NAME=docker-agent
-      - JENKINS_SECRET=REMPLACER_PAR_VOTRE_SECRET
+      - JENKINS_URL=http://jenkins-controller:8080  # L'URL de Jenkins
+      - JENKINS_AGENT_NAME=docker-agent  # Nom de l'agent
+      - JENKINS_SECRET=REMPLACER_PAR_VOTRE_SECRET  # Le secret d'authentification de l'agent (à remplacer)
       - JENKINS_WEB_SOCKET=true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock  # Permet à l'agent de communiquer avec Docker
     depends_on:
       - jenkins
-      - sonarqube
 
 volumes:
   jenkins_home:
-  sonarqube_data:
-  sonarqube_extensions:
-  sonarqube_db_data:
