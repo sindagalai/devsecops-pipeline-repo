@@ -43,16 +43,30 @@ services:
     image: aquasec/trivy:0.22.0  # Utiliser une version stable de Trivy
     networks:
       - devsecops-network
+    ports:
+      - "8081:8080"  # Trivy UI (si applicable)
+    environment:
+      - TRIVY_CACHE_DIR=/root/.cache/trivy
+    volumes:
+      - trivy_data:/root/.cache/trivy
 
   # Gitleaks service
   gitleaks:
     image: zricethezav/gitleaks:latest
     networks:
       - devsecops-network
+    ports:
+      - "8082:8080"  # Gitleaks UI (si applicable)
+    environment:
+      - GITLEAKS_CONFIG_PATH=/etc/gitleaks/config.toml
+    volumes:
+      - gitleaks_data:/etc/gitleaks
 
 volumes:
   jenkins_home:
   postgres_data:
+  trivy_data:
+  gitleaks_data:
 
 networks:
   devsecops-network:

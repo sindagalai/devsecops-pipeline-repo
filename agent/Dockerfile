@@ -1,12 +1,10 @@
 ###############################################################################
 # Jenkins Inbound Agent — DevSecOps Toolchain
-# Tools: Docker CLI, Maven, Gitleaks
+# Tools: Docker CLI, Maven
 # SonarQube Scanner & Trivy run as Docker containers from pipelines
 ###############################################################################
 
 FROM jenkins/inbound-agent:3261.v9c670a_4748a_9-1
-
-ARG GITLEAKS_VERSION=8.21.2
 
 USER root
 
@@ -22,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gnupg \
         lsb-release \
         ca-certificates \
+        openjdk-21-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 2. Docker CLI only (no daemon — talks to host via socket) ─────────────
@@ -41,14 +40,7 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 # Give jenkins user access to docker socket (GID aligned at runtime)
 RUN groupadd -f docker && usermod -aG docker jenkins
 
-# ── 3. Gitleaks (secret detection — tiny binary, worth baking in) ─────────
-RUN curl -fsSL -o /tmp/gitleaks.tar.gz \
-        "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-    && tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks \
-    && chmod +x /usr/local/bin/gitleaks \
-    && rm /tmp/gitleaks.tar.gz
-
-# ── 4. Workspace setup ───────────────────────────────────────────────────
+# ── 3. Workspace setup ───────────────────────────────────────────────────
 RUN mkdir -p /home/jenkins/agent/reports \
     && chown -R jenkins:jenkins /home/jenkins/agent
 
