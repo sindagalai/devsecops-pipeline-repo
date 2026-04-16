@@ -1,36 +1,44 @@
-version: '3.8'
+version: '3.7'
 
 services:
-  # Service pour Jenkins (controller)
+  # Jenkins service (l'agent Jenkins dans ce conteneur)
   jenkins:
     image: jenkins/jenkins:lts
-    container_name: jenkins-controller
-    restart: unless-stopped
     ports:
-      - "8082:8080"  # Utilise le port 8082 pour Jenkins (éviter le conflit avec ton Jenkins actuel)
-      - "50001:50000" # Port pour la communication entre l'agent et Jenkins
+      - "8080:8080"  # Jenkins UI
+      - "50000:50000"  # Jenkins agent communication
     volumes:
-      - jenkins_home:/var/jenkins_home  # Volume pour persister les données Jenkins
-      - /var/run/docker.sock:/var/run/docker.sock  # Donne accès à Docker sur l'hôte
+      - jenkins_home:/var/jenkins_home
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # Désactiver l'assistant de configuration de Jenkins
+      - JENKINS_OPTS=--prefix=/jenkins
+    networks:
+      - devsecops-network
 
-  # Service pour l'agent Jenkins
-  jenkins-agent:
-    build:
-      context: ./agent  # Construction de l'image à partir du Dockerfile dans ./agent
-    container_name: jenkins-agent
-    restart: unless-stopped
-    user: root
+  # SonarQube service
+  sonarqube:
+    image: sonarqube:latest
+    ports:
+      - "9000:9000"  # SonarQube UI
     environment:
-      - JENKINS_URL=http://jenkins-controller:8080  # L'URL de Jenkins
-      - JENKINS_AGENT_NAME=docker-agent  # Nom de l'agent
-      - JENKINS_SECRET=REMPLACER_PAR_VOTRE_SECRET  # Le secret d'authentification de l'agent (à remplacer)
-      - JENKINS_WEB_SOCKET=true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Permet à l'agent de communiquer avec Docker
-    depends_on:
-      - jenkins
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://db:5432/sonar
+    networks:
+      - devsecops-network
+
+  # Trivy service
+  trivy:
+    image: aquasec/trivy:latest
+    networks:
+      - devsecops-network
+
+  # Gitleaks service
+  gitleaks:
+    image: zricethezav/gitleaks:latest
+    networks:
+      - devsecops-network
 
 volumes:
   jenkins_home:
+  
+networks:
+  devsecops-network:
+    driver: bridge

@@ -1,23 +1,58 @@
-# Utilisation de l'image officielle Jenkins inbound agent
-FROM jenkins/inbound-agent:latest
+###############################################################################
+# Jenkins Inbound Agent — DevSecOps Toolchain
+# Tools: Docker CLI, Maven, Gitleaks
+# SonarQube Scanner & Trivy run as Docker containers from pipelines
+###############################################################################
 
-# Passage à l'utilisateur root pour l'installation des outils nécessaires
+FROM jenkins/inbound-agent:3261.v9c670a_4748a_9-1
+
+ARG GITLEAKS_VERSION=8.21.2
+
 USER root
 
-# Mise à jour et installation des outils nécessaires
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    wget \
-    unzip \
-    jq \
-    bash \
-    maven \
-    docker.io \
+# ── 1. Base packages ───────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        curl \
+        wget \
+        unzip \
+        jq \
+        bash \
+        maven \
+        gnupg \
+        lsb-release \
+        ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Exposer le répertoire de travail
+# ── 2. Docker CLI only (no daemon — talks to host via socket) ─────────────
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg \
+       -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) \
+       signed-by=/etc/apt/keyrings/docker.asc] \
+       https://download.docker.com/linux/debian \
+       $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+       > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Give jenkins user access to docker socket (GID aligned at runtime)
+RUN groupadd -f docker && usermod -aG docker jenkins
+
+# ── 3. Gitleaks (secret detection — tiny binary, worth baking in) ─────────
+RUN curl -fsSL -o /tmp/gitleaks.tar.gz \
+        "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+    && tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && rm /tmp/gitleaks.tar.gz
+
+# ── 4. Workspace setup ───────────────────────────────────────────────────
+RUN mkdir -p /home/jenkins/agent/reports \
+    && chown -R jenkins:jenkins /home/jenkins/agent
+
 WORKDIR /home/jenkins/agent
 
-# Revenir à l'utilisateur Jenkins (privilèges moindres)
+# Drop back to non-root
 USER jenkins
