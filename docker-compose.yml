@@ -14,7 +14,7 @@ services:
       - devsecops-network
 
   postgres:
-    image: postgres:latest
+    image: postgres:15
     container_name: postgres
     restart: unless-stopped
     environment:
