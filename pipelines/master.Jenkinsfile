@@ -1,11 +1,6 @@
 pipeline {
     
-    agent {
-        docker {
-            image 'jenkins/inbound-agent:3261.v9c670a_4748a_9-1'  // Utilise l'image Docker de ton agent
-            args '-v /var/run/docker.sock:/var/run/docker.sock'  // Permet à Docker de s'exécuter à l'intérieur du conteneur
-        }
-    }
+    agent any
 
 
 
