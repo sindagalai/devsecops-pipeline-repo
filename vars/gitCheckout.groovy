@@ -1,5 +1,6 @@
-def call() {
-    git branch: 'main',
+def call(String repoUrl = 'https://github.com/sindagalai/DevSecOpsTest.git', String branchName = 'main') {
+    // Cloner le dépôt Git cible avec la branche spécifiée
+    git branch: branchName,
         credentialsId: 'github-creds',
-        url: 'https://github.com/sindagalai/DevSecOpsTest.git'
+        url: repoUrl
 }
