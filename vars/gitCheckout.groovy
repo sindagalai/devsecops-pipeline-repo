@@ -4,3 +4,5 @@ def call(String repoUrl = 'https://github.com/sindagalai/DevSecOpsTest.git', Str
         credentialsId: 'github-creds',
         url: repoUrl
 }
+
+return this

@@ -8,3 +8,5 @@ def call() {
         -Dsonar.token=${SONAR_TOKEN}
     """
 }
+
+return this

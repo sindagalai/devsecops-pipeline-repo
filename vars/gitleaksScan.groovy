@@ -36,3 +36,5 @@ def call() {
         fi
     '''
 }
+
+return this

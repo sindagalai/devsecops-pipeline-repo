@@ -12,3 +12,5 @@ def call() {
         echo "Generated on: $(date)" >> reports/sast/summary.txt
     '''
 }
+
+return this
