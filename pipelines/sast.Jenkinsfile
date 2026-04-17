@@ -1,27 +1,16 @@
 pipeline {
 
-    // Exécuter le pipeline sur l'agent Jenkins Dockerisé
     agent {
         label 'docker-agent'
     }
 
-    // Éviter le checkout automatique du repo pipeline
-    options {
-        skipDefaultCheckout(true)
-    }
-
-    // Variables globales utilisées dans les scripts
     environment {
-        // Token SonarQube stocké dans Jenkins Credentials
         SONAR_TOKEN = credentials('sonar-token')
-
-        // URL SonarQube via le nom du service Docker (portable)
         SONAR_HOST_URL = 'http://sonarqube:9000'
     }
 
     stages {
 
-        // Vérifier l'environnement de l'agent Jenkins
         stage('Check Environment') {
             steps {
                 script {
@@ -32,7 +21,6 @@ pipeline {
             }
         }
 
-        // Cloner le dépôt de l'application à analyser
         stage('Checkout Code') {
             steps {
                 dir('source-code') {
@@ -44,7 +32,6 @@ pipeline {
             }
         }
 
-        // Lancer l'analyse SonarQube
         stage('Run SonarQube Scan') {
             steps {
                 dir('source-code') {
@@ -56,7 +43,6 @@ pipeline {
             }
         }
 
-        // Lancer l'analyse Gitleaks
         stage('Run Gitleaks Scan') {
             steps {
                 dir('source-code') {
@@ -68,7 +54,6 @@ pipeline {
             }
         }
 
-        // Générer le rapport SAST final
         stage('Generate SAST Report') {
             steps {
                 dir('source-code') {
@@ -80,7 +65,6 @@ pipeline {
             }
         }
 
-        // Archiver les rapports générés dans Jenkins
         stage('Archive SAST Report') {
             steps {
                 script {
