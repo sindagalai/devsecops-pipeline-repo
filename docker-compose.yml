@@ -1,34 +1,43 @@
 version: '3.7'
 
 services:
-  # Jenkins service (l'agent Jenkins dans ce conteneur)
+
   jenkins:
     image: jenkins/jenkins:lts
     ports:
-      - "8080:8080"  # Jenkins UI
-      - "50000:50000"  # Jenkins agent communication
+      - "8080:8080"
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-    environment:
-      - JENKINS_OPTS=--prefix=/jenkins
+      - /var/run/docker.sock:/var/run/docker.sock  # ← MANQUAIT ! Jenkins doit parler à Docker
     networks:
       - devsecops-network
 
-  # SonarQube service
+  jenkins-agent:
+    build:
+      context: ./agent          # ← AJOUTÉ : construit ton Dockerfile
+      dockerfile: Dockerfile
+    image: devsecops-agent:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # ← accès Docker socket
+    networks:
+      - devsecops-network
+
   sonarqube:
-    image: sonarqube:latest
+    image: sonarqube:lts-community  # ← "latest" instable, utilise lts-community
     ports:
-      - "9000:9000"  # SonarQube UI
+      - "9000:9000"
     environment:
-      - SONARQUBE_JDBC_URL=jdbc:postgresql://postgres:5432/sonar  # Connexion à la base de données PostgreSQL
+      - SONAR_JDBC_URL=jdbc:postgresql://postgres:5432/sonar  # ← SONAR_JDBC pas SONARQUBE_JDBC
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
     depends_on:
-      - postgres  # Dépendance sur le service PostgreSQL
+      - postgres
     networks:
       - devsecops-network
 
-  # PostgreSQL service for SonarQube
   postgres:
-    image: postgres:latest
+    image: postgres:15  # ← version fixe, pas "latest"
     environment:
       - POSTGRES_USER=sonar
       - POSTGRES_PASSWORD=sonar
@@ -38,35 +47,13 @@ services:
     networks:
       - devsecops-network
 
-  # Trivy service
-  trivy:
-    image: aquasec/trivy:0.22.0  # Utiliser une version stable de Trivy
-    networks:
-      - devsecops-network
-    ports:
-      - "8081:8080"  # Trivy UI (si applicable)
-    environment:
-      - TRIVY_CACHE_DIR=/root/.cache/trivy
-    volumes:
-      - trivy_data:/root/.cache/trivy
-
-  # Gitleaks service
-  gitleaks:
-    image: zricethezav/gitleaks:latest
-    networks:
-      - devsecops-network
-    ports:
-      - "8082:8080"  # Gitleaks UI (si applicable)
-    environment:
-      - GITLEAKS_CONFIG_PATH=/etc/gitleaks/config.toml
-    volumes:
-      - gitleaks_data:/etc/gitleaks
+  # Trivy et Gitleaks : PAS des services permanents !
+  # Ils sont appelés en ligne de commande depuis les pipelines
+  # Supprimer ces deux services
 
 volumes:
   jenkins_home:
   postgres_data:
-  trivy_data:
-  gitleaks_data:
 
 networks:
   devsecops-network:
