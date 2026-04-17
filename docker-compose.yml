@@ -1,59 +1,56 @@
 version: '3.7'
 
 services:
-
   jenkins:
     image: jenkins/jenkins:lts
+    container_name: jenkins
+    restart: unless-stopped
     ports:
       - "8080:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock  # ← MANQUAIT ! Jenkins doit parler à Docker
-    networks:
-      - devsecops-network
-
-  jenkins-agent:
-    build:
-      context: ./agent          # ← AJOUTÉ : construit ton Dockerfile
-      dockerfile: Dockerfile
-    image: devsecops-agent:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # ← accès Docker socket
-    networks:
-      - devsecops-network
-
-  sonarqube:
-    image: sonarqube:lts-community  # ← "latest" instable, utilise lts-community
-    ports:
-      - "9000:9000"
-    environment:
-      - SONAR_JDBC_URL=jdbc:postgresql://postgres:5432/sonar  # ← SONAR_JDBC pas SONARQUBE_JDBC
-      - SONAR_JDBC_USERNAME=sonar
-      - SONAR_JDBC_PASSWORD=sonar
-    depends_on:
-      - postgres
     networks:
       - devsecops-network
 
   postgres:
-    image: postgres:15  # ← version fixe, pas "latest"
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=sonar
-      - POSTGRES_PASSWORD=sonar
-      - POSTGRES_DB=sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - devsecops-network
 
-  # Trivy et Gitleaks : PAS des services permanents !
-  # Ils sont appelés en ligne de commande depuis les pipelines
-  # Supprimer ces deux services
+  sonarqube:
+    image: sonarqube:latest
+    container_name: sonarqube
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - devsecops-network
 
 volumes:
   jenkins_home:
   postgres_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
 
 networks:
   devsecops-network:
