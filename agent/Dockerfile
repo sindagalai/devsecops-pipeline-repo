@@ -1,16 +1,12 @@
 ###############################################################################
 # Jenkins Inbound Agent — DevSecOps Toolchain
-# - Git / Maven / JDK 21 / Docker CLI
-# - SonarScanner, Gitleaks, Trivy run as Docker containers from pipelines
+# - Git / Maven / JDK 21 / Docker CLI / Gitleaks
 ###############################################################################
 
 FROM jenkins/inbound-agent:3261.v9c670a_4748a_9-1
 
 USER root
 
-# -----------------------------------------------------------------------------
-# 1. Base packages
-# -----------------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
@@ -25,12 +21,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     less \
     iputils-ping \
     netcat-openbsd \
+    tar \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# -----------------------------------------------------------------------------
-# 2. Install Eclipse Temurin JDK 21 + Maven
-# -----------------------------------------------------------------------------
 RUN install -m 0755 -d /etc/apt/keyrings \
  && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
     | gpg --dearmor -o /etc/apt/keyrings/adoptium.gpg \
@@ -41,9 +35,6 @@ RUN install -m 0755 -d /etc/apt/keyrings \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# -----------------------------------------------------------------------------
-# 3. Install Docker CLI only
-# -----------------------------------------------------------------------------
 RUN install -m 0755 -d /etc/apt/keyrings \
  && curl -fsSL https://download.docker.com/linux/debian/gpg \
     -o /etc/apt/keyrings/docker.asc \
@@ -55,17 +46,18 @@ RUN install -m 0755 -d /etc/apt/keyrings \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# -----------------------------------------------------------------------------
-# 4. Docker group + workspace
-# -----------------------------------------------------------------------------
+RUN wget -q https://github.com/gitleaks/gitleaks/releases/download/v8.24.2/gitleaks_8.24.2_linux_x64.tar.gz -O /tmp/gitleaks.tar.gz \
+ && tar -xzf /tmp/gitleaks.tar.gz -C /tmp \
+ && mv /tmp/gitleaks /usr/local/bin/gitleaks \
+ && chmod +x /usr/local/bin/gitleaks \
+ && rm -f /tmp/gitleaks.tar.gz
+
 RUN groupadd -f docker \
  && usermod -aG docker jenkins \
  && mkdir -p /home/jenkins/agent/reports \
+ && mkdir -p /home/jenkins/agent/gitleaks-rules \
  && chown -R jenkins:jenkins /home/jenkins/agent
 
-# -----------------------------------------------------------------------------
-# 5. Environment
-# -----------------------------------------------------------------------------
 ENV JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
 ENV MAVEN_HOME=/usr/share/maven
 ENV PATH="${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${PATH}"
