@@ -26,7 +26,6 @@ def call() {
         echo "=== USING CONFIG: ${CONFIG_FILE} ==="
 
         gitleaks dir . \
-          --no-git \
           --config "${CONFIG_FILE}" \
           --report-format json \
           --report-path reports/sast/gitleaks-report.json \
