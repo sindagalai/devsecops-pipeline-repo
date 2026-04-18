@@ -1,8 +1,6 @@
 pipeline {
 
-    agent {
-        label 'docker-agent'
-    }
+    agent none
 
     parameters {
         choice(
