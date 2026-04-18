@@ -5,7 +5,6 @@ def call() {
         echo "=== DEBUG WORKSPACE ==="
         pwd
         ls -la
-        find . -type f | head -50 || true
 
         mkdir -p reports/sast
         rm -f reports/sast/gitleaks-report.json
@@ -14,7 +13,6 @@ def call() {
         gitleaks version
 
         CONFIG_FILE=""
-
         if [ -f ".gitleaks.toml" ]; then
             echo "Project-specific .gitleaks.toml found"
             CONFIG_FILE=".gitleaks.toml"
@@ -28,6 +26,7 @@ def call() {
         echo "=== USING CONFIG: ${CONFIG_FILE} ==="
 
         gitleaks dir . \
+          --no-git \
           --config "${CONFIG_FILE}" \
           --report-format json \
           --report-path reports/sast/gitleaks-report.json \

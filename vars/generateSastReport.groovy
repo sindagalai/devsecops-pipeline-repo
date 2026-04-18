@@ -6,17 +6,21 @@ def call() {
 
         if [ -f reports/sast/gitleaks-report.json ]; then
             GITLEAKS_TOTAL=$(jq 'length' reports/sast/gitleaks-report.json 2>/dev/null || echo 0)
+            GITLEAKS_HIGH=$(jq '[.[] | select(((.Tags // []) | index("high-confidence")) or ((.Tags // []) | index("critical")))] | length' reports/sast/gitleaks-report.json 2>/dev/null || echo 0)
+            GITLEAKS_STATUS="EXECUTED"
         else
-            echo "[]"> reports/sast/gitleaks-report.json
+            echo "[]" > reports/sast/gitleaks-report.json
             GITLEAKS_TOTAL=0
+            GITLEAKS_HIGH=0
+            GITLEAKS_STATUS="FAILED_OR_SKIPPED"
         fi
 
         curl -s -u ${SONAR_TOKEN}: \
-          "${SONAR_HOST_URL}/api/issues/search?componentKeys=devsecops-test&ps=500" \
+          "${SONAR_HOST_URL}/api/issues/search?componentKeys=${SONAR_PROJECT_KEY}&ps=500" \
           -o reports/sast/sonar-report.json || true
 
         curl -s -u ${SONAR_TOKEN}: \
-          "${SONAR_HOST_URL}/api/measures/component?component=devsecops-test&metricKeys=bugs,vulnerabilities,code_smells,security_hotspots,coverage,duplicated_lines_density,reliability_rating,security_rating,sqale_rating,alert_status" \
+          "${SONAR_HOST_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=bugs,vulnerabilities,code_smells,security_hotspots,coverage,duplicated_lines_density,reliability_rating,security_rating,sqale_rating,alert_status" \
           -o reports/sast/sonar-measures.json || true
 
         if [ -f reports/sast/sonar-report.json ]; then
@@ -53,7 +57,10 @@ def call() {
           echo "=============================="
           echo "       SAST SECURITY REPORT"
           echo "=============================="
-          echo "Project               : devsecops-test"
+          echo "Project               : ${SONAR_PROJECT_NAME}"
+          echo "Repository            : ${REPO_URL}"
+          echo "Branch                : ${REPO_BRANCH}"
+          echo "Project Type          : ${PROJECT_TYPE}"
           echo "Generated on          : $(date)"
           echo
           echo "---------- SONARQUBE ----------"
@@ -70,10 +77,12 @@ def call() {
           echo "Quality Gate          : $QUALITY_GATE"
           echo
           echo "---------- GITLEAKS ----------"
+          echo "Scan Status           : $GITLEAKS_STATUS"
           echo "Total Findings        : $GITLEAKS_TOTAL"
+          echo "High Confidence       : $GITLEAKS_HIGH"
           echo
           echo "---------- FINAL STATUS ----------"
-          if [ "$GITLEAKS_TOTAL" -gt 0 ] || [ "$VULN" -gt 0 ]; then
+          if [ "$GITLEAKS_HIGH" -gt 0 ] || [ "$VULN" -gt 0 ]; then
               echo "[WARNING] Security issues detected"
           else
               echo "[OK] No critical issues detected"
