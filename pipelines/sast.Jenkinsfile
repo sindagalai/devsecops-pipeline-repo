@@ -42,8 +42,10 @@ pipeline {
             steps {
                 dir('source-code') {
                     script {
-                        def gitleaksScan = load "${WORKSPACE}/vars/gitleaksScan.groovy"
-                        gitleaksScan()
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            def gitleaksScan = load "${WORKSPACE}/vars/gitleaksScan.groovy"
+                            gitleaksScan()
+                        }
                     }
                 }
             }

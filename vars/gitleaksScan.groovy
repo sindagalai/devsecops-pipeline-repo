@@ -11,25 +11,18 @@ def call() {
         pwd
         ls -la
 
-        if [ -f .gitleaks.toml ]; then
-            echo ".gitleaks.toml found"
-            CONFIG_ARG="--config=/repo/.gitleaks.toml"
-        else
-            echo ".gitleaks.toml not found, using default config"
-            CONFIG_ARG=""
-        fi
-
+        # Scan Gitleaks sans dépendre du fichier .gitleaks.toml
         docker run --rm \
           -v "$PWD":/repo \
           -w /repo \
           zricethezav/gitleaks:latest detect \
           --source=/repo \
-          $CONFIG_ARG \
           --report-format=json \
           --report-path=/repo/reports/sast/gitleaks-report.json \
           --exit-code 0 \
           --verbose
 
+        # Garantir l'existence du rapport
         if [ ! -f reports/sast/gitleaks-report.json ]; then
             echo "[]"> reports/sast/gitleaks-report.json
         fi
