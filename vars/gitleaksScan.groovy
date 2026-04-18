@@ -3,26 +3,25 @@ def call() {
         set -e
 
         mkdir -p reports/sast
+        rm -f reports/sast/gitleaks-report.json
 
         echo "========================================"
-        echo "Running Gitleaks scan"
+        echo "Running Gitleaks directory scan"
         echo "========================================"
 
         pwd
         ls -la
-        ls -la .git || true
         ls -la reports || true
         ls -la reports/sast || true
 
         docker run --rm \
-          -e GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
           -v "$PWD":/repo \
           -v "$PWD/reports/sast":/report \
           -w /repo \
-          zricethezav/gitleaks:latest detect \
-          --source=/repo \
-          --report-format=json \
-          --report-path=/report/gitleaks-report.json \
+          zricethezav/gitleaks:latest \
+          dir /repo \
+          --report-format json \
+          --report-path /report/gitleaks-report.json \
           --exit-code 0 \
           --verbose
 
