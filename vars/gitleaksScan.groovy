@@ -10,19 +10,20 @@ def call() {
 
         pwd
         ls -la
+        ls -la reports
+        ls -la reports/sast
 
-        # Scan Gitleaks sans dépendre du fichier .gitleaks.toml
         docker run --rm \
           -v "$PWD":/repo \
+          -v "$PWD/reports/sast":/report \
           -w /repo \
           zricethezav/gitleaks:latest detect \
           --source=/repo \
           --report-format=json \
-          --report-path=/repo/reports/sast/gitleaks-report.json \
+          --report-path=/report/gitleaks-report.json \
           --exit-code 0 \
           --verbose
 
-        # Garantir l'existence du rapport
         if [ ! -f reports/sast/gitleaks-report.json ]; then
             echo "[]"> reports/sast/gitleaks-report.json
         fi
