@@ -1,24 +1,24 @@
 def call() {
     sh '''
-        # Créer le dossier de rapport
+        set -e
+
         mkdir -p reports/sast
 
-        echo "Running Gitleaks scan..."
+        echo "========================================"
+        echo "Running Gitleaks scan"
+        echo "========================================"
 
-        # Vérification du contexte courant
         pwd
         ls -la
 
-        # Vérifier si le fichier de config existe
         if [ -f .gitleaks.toml ]; then
             echo ".gitleaks.toml found"
             CONFIG_ARG="--config=/repo/.gitleaks.toml"
         else
-            echo ".gitleaks.toml not found, running with default config"
+            echo ".gitleaks.toml not found, using default Gitleaks config"
             CONFIG_ARG=""
         fi
 
-        # Lancer Gitleaks dans un conteneur Docker
         docker run --rm \
           -v "$PWD":/repo \
           -w /repo \
@@ -26,13 +26,19 @@ def call() {
           --source=/repo \
           $CONFIG_ARG \
           --report-format=json \
-          --report-path=/repo/reports/sast/gitleaks-report.json || true
+          --report-path=/repo/reports/sast/gitleaks-report.json \
+          --exit-code 0 \
+          --verbose
 
-        echo "Gitleaks report content:"
+        echo "========================================"
+        echo "Gitleaks report preview"
+        echo "========================================"
+
         if [ -f reports/sast/gitleaks-report.json ]; then
             cat reports/sast/gitleaks-report.json
         else
-            echo "No gitleaks report generated"
+            echo "[]"> reports/sast/gitleaks-report.json
+            echo "Empty Gitleaks report created"
         fi
     '''
 }

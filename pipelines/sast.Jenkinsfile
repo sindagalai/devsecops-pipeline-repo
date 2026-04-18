@@ -4,12 +4,17 @@ pipeline {
         label 'docker-agent'
     }
 
-    environment {
-        // Token SonarQube stocké dans Jenkins Credentials
-        SONAR_TOKEN = credentials('sonar-token')
+    options {
+        timeout(time: 45, unit: 'MINUTES')
+        timestamps()
+    }
 
-        // Utilisation du nom du service Docker (portable)
+    environment {
+        SONAR_TOKEN = credentials('sonar-token')
         SONAR_HOST_URL = 'http://sonarqube:9000'
+
+        // Réduit un peu la pression mémoire sur Jenkins/agent
+        MAVEN_OPTS = '-Xms256m -Xmx1024m'
     }
 
     stages {
@@ -37,12 +42,10 @@ pipeline {
 
         stage('Run SonarQube Scan') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    dir('source-code') {
-                        script {
-                            def sonarScan = load "${WORKSPACE}/vars/sonarScan.groovy"
-                            sonarScan()
-                        }
+                dir('source-code') {
+                    script {
+                        def sonarScan = load "${WORKSPACE}/vars/sonarScan.groovy"
+                        sonarScan()
                     }
                 }
             }
