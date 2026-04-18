@@ -16,11 +16,11 @@ def call() {
         fi
 
         curl -s -u ${SONAR_TOKEN}: \
-          "${SONAR_HOST_URL}/api/issues/search?componentKeys=${SONAR_PROJECT_KEY}&ps=500" \
+          "${SONAR_HOST_URL}/api/issues/search?componentKeys=${SONAR_PROJECT_KEY_ENV}&ps=500" \
           -o reports/sast/sonar-report.json || true
 
         curl -s -u ${SONAR_TOKEN}: \
-          "${SONAR_HOST_URL}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=bugs,vulnerabilities,code_smells,security_hotspots,coverage,duplicated_lines_density,reliability_rating,security_rating,sqale_rating,alert_status" \
+          "${SONAR_HOST_URL}/api/measures/component?component=${SONAR_PROJECT_KEY_ENV}&metricKeys=bugs,vulnerabilities,code_smells,security_hotspots,coverage,duplicated_lines_density,reliability_rating,security_rating,sqale_rating,alert_status" \
           -o reports/sast/sonar-measures.json || true
 
         if [ -f reports/sast/sonar-report.json ]; then
@@ -57,10 +57,10 @@ def call() {
           echo "=============================="
           echo "       SAST SECURITY REPORT"
           echo "=============================="
-          echo "Project               : ${SONAR_PROJECT_NAME}"
-          echo "Repository            : ${REPO_URL}"
-          echo "Branch                : ${REPO_BRANCH}"
-          echo "Project Type          : ${PROJECT_TYPE}"
+          echo "Project               : ${SONAR_PROJECT_NAME_ENV}"
+          echo "Repository            : ${REPO_URL_ENV}"
+          echo "Branch                : ${REPO_BRANCH_ENV}"
+          echo "Project Type          : ${PROJECT_TYPE_ENV}"
           echo "Generated on          : $(date)"
           echo
           echo "---------- SONARQUBE ----------"

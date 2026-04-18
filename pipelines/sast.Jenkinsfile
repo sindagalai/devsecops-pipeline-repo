@@ -9,10 +9,24 @@ pipeline {
         timestamps()
     }
 
+    parameters {
+        string(name: 'REPO_URL', defaultValue: 'https://github.com/sindagalai/DevSecOpsTest.git', description: 'Repository URL to scan')
+        string(name: 'REPO_BRANCH', defaultValue: 'main', description: 'Branch to scan')
+        choice(name: 'PROJECT_TYPE', choices: ['java', 'fullstack', 'node', 'python', 'generic'], description: 'Project type')
+        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'devsecops-test', description: 'SonarQube project key')
+        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'DevSecOpsTest', description: 'SonarQube project name')
+    }
+
     environment {
         SONAR_TOKEN = credentials('sonar-token')
         SONAR_HOST_URL = 'http://sonarqube:9000'
         MAVEN_OPTS = '-Xms256m -Xmx1024m'
+
+        REPO_URL_ENV = "${params.REPO_URL}"
+        REPO_BRANCH_ENV = "${params.REPO_BRANCH}"
+        PROJECT_TYPE_ENV = "${params.PROJECT_TYPE}"
+        SONAR_PROJECT_KEY_ENV = "${params.SONAR_PROJECT_KEY}"
+        SONAR_PROJECT_NAME_ENV = "${params.SONAR_PROJECT_NAME}"
     }
 
     stages {
@@ -68,8 +82,10 @@ pipeline {
             steps {
                 dir('source-code') {
                     script {
-                        def generateSastReport = load "${WORKSPACE}/vars/generateSastReport.groovy"
-                        generateSastReport()
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            def generateSastReport = load "${WORKSPACE}/vars/generateSastReport.groovy"
+                            generateSastReport()
+                        }
                     }
                 }
             }
@@ -77,10 +93,7 @@ pipeline {
 
         stage('Archive SAST Report') {
             steps {
-                script {
-                    def common = load "${WORKSPACE}/vars/common.groovy"
-                    common.archiveReport('source-code/reports/sast/**')
-                }
+                archiveArtifacts artifacts: 'source-code/reports/sast/**', fingerprint: true
             }
         }
     }

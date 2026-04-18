@@ -11,14 +11,19 @@ def call() {
         echo "Running SonarQube SAST scan"
         echo "========================================"
 
-        mvn -B -ntp clean verify sonar:sonar \
-          -DskipTests \
-          -Dskip.npm \
-          -Dskip.installnodenpm \
-          -Dsonar.projectKey=devsecops-test \
-          -Dsonar.projectName=DevSecOpsTest \
-          -Dsonar.host.url=${SONAR_HOST_URL} \
-          -Dsonar.token=${SONAR_TOKEN}
+        if [ "${PROJECT_TYPE_ENV}" = "java" ] || [ "${PROJECT_TYPE_ENV}" = "fullstack" ]; then
+            mvn -B -ntp clean verify sonar:sonar \
+              -DskipTests \
+              -Dskip.npm \
+              -Dskip.installnodenpm \
+              -Dsonar.projectKey=${SONAR_PROJECT_KEY_ENV} \
+              -Dsonar.projectName=${SONAR_PROJECT_NAME_ENV} \
+              -Dsonar.host.url=${SONAR_HOST_URL} \
+              -Dsonar.token=${SONAR_TOKEN}
+        else
+            echo "PROJECT_TYPE_ENV=${PROJECT_TYPE_ENV} not yet using Maven Sonar flow."
+            echo "Skipping Maven-based Sonar scan."
+        fi
 
         EXIT_CODE=$?
 
