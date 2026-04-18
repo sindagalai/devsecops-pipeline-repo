@@ -1,0 +1,43 @@
+title = "Default generic Gitleaks rules for enterprise scanning"
+
+[[rules]]
+id = "generic-secret"
+description = "Detect generic secret assignments"
+regex = '''(?i)(secret|secret_key|client_secret|app_secret|jwt_secret|auth_secret)\s*[:=]\s*['"]?[A-Za-z0-9_/\-+=]{8,}['"]?'''
+tags = ["secret", "generic"]
+
+[[rules]]
+id = "generic-token"
+description = "Detect generic token assignments"
+regex = '''(?i)(token|access_token|refresh_token|id_token|auth_token)\s*[:=]\s*['"]?[A-Za-z0-9_/\-+=\.]{8,}['"]?'''
+tags = ["token", "generic"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Detect API key assignments"
+regex = '''(?i)(api[_-]?key|apikey|access[_-]?key|client[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9_/\-+=]{8,}['"]?'''
+tags = ["apikey", "generic"]
+
+[[rules]]
+id = "generic-password"
+description = "Detect password assignments"
+regex = '''(?i)(password|passwd|pwd|db_password|database_password)\s*[:=]\s*['"]?[^\s'"]{6,}['"]?'''
+tags = ["password", "generic"]
+
+[[rules]]
+id = "private-key"
+description = "Detect private key blocks"
+regex = '''-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY).*-----'''
+tags = ["private-key", "key"]
+
+[[rules]]
+id = "authorization-bearer"
+description = "Detect hardcoded bearer tokens"
+regex = '''(?i)authorization\s*[:=]\s*['"]?bearer\s+[A-Za-z0-9\-\._~\+\/]+=*['"]?'''
+tags = ["bearer", "token"]
+
+[[rules]]
+id = "basic-auth"
+description = "Detect basic auth credentials"
+regex = '''(?i)(basic_auth|authorization)\s*[:=]\s*['"]?basic\s+[A-Za-z0-9=:+/._-]{8,}['"]?'''
+tags = ["basic-auth", "credentials"]
