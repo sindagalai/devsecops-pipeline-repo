@@ -2,36 +2,39 @@ def call() {
     sh '''
         set -e
 
+        echo "=== DEBUG WORKSPACE ==="
+        pwd
+        ls -la
+
+        echo "=== VERIFY GIT ==="
+        git status || true
+
         mkdir -p reports/sast
         rm -f reports/sast/gitleaks-report.json
 
         echo "========================================"
-        echo "Running Gitleaks directory scan"
+        echo "Running Gitleaks REAL scan"
         echo "========================================"
 
-        pwd
-        ls -la
-        ls -la reports || true
-        ls -la reports/sast || true
-
         docker run --rm \
-          -v "$PWD":/repo \
-          -v "$PWD/reports/sast":/report \
+          -v "$(pwd)":/repo \
           -w /repo \
           zricethezav/gitleaks:latest \
-          dir /repo \
+          dir . \
           --report-format json \
-          --report-path /report/gitleaks-report.json \
+          --report-path reports/sast/gitleaks-report.json \
           --exit-code 0 \
           --verbose
 
+        echo "=== CHECK REPORT ==="
+        ls -la reports/sast
+
         if [ ! -f reports/sast/gitleaks-report.json ]; then
-            echo "[]"> reports/sast/gitleaks-report.json
+            echo "Report missing → creating empty file"
+            echo "[]" > reports/sast/gitleaks-report.json
         fi
 
-        echo "========================================"
-        echo "Gitleaks report generated"
-        echo "========================================"
+        echo "=== REPORT CONTENT ==="
         cat reports/sast/gitleaks-report.json
     '''
 }
