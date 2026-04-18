@@ -10,10 +10,12 @@ def call() {
 
         pwd
         ls -la
-        ls -la reports
-        ls -la reports/sast
+        ls -la .git || true
+        ls -la reports || true
+        ls -la reports/sast || true
 
         docker run --rm \
+          -e GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
           -v "$PWD":/repo \
           -v "$PWD/reports/sast":/report \
           -w /repo \
