@@ -15,7 +15,7 @@ def call() {
             echo ".gitleaks.toml found"
             CONFIG_ARG="--config=/repo/.gitleaks.toml"
         else
-            echo ".gitleaks.toml not found, using default Gitleaks config"
+            echo ".gitleaks.toml not found, using default config"
             CONFIG_ARG=""
         fi
 
@@ -30,16 +30,14 @@ def call() {
           --exit-code 0 \
           --verbose
 
-        echo "========================================"
-        echo "Gitleaks report preview"
-        echo "========================================"
-
-        if [ -f reports/sast/gitleaks-report.json ]; then
-            cat reports/sast/gitleaks-report.json
-        else
+        if [ ! -f reports/sast/gitleaks-report.json ]; then
             echo "[]"> reports/sast/gitleaks-report.json
-            echo "Empty Gitleaks report created"
         fi
+
+        echo "========================================"
+        echo "Gitleaks report generated"
+        echo "========================================"
+        cat reports/sast/gitleaks-report.json
     '''
 }
 

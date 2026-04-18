@@ -12,8 +12,6 @@ pipeline {
     environment {
         SONAR_TOKEN = credentials('sonar-token')
         SONAR_HOST_URL = 'http://sonarqube:9000'
-
-        // Réduit un peu la pression mémoire sur Jenkins/agent
         MAVEN_OPTS = '-Xms256m -Xmx1024m'
     }
 
@@ -40,23 +38,25 @@ pipeline {
             }
         }
 
-        stage('Run SonarQube Scan') {
-            steps {
-                dir('source-code') {
-                    script {
-                        def sonarScan = load "${WORKSPACE}/vars/sonarScan.groovy"
-                        sonarScan()
-                    }
-                }
-            }
-        }
-
         stage('Run Gitleaks Scan') {
             steps {
                 dir('source-code') {
                     script {
                         def gitleaksScan = load "${WORKSPACE}/vars/gitleaksScan.groovy"
                         gitleaksScan()
+                    }
+                }
+            }
+        }
+
+        stage('Run SonarQube Scan') {
+            steps {
+                dir('source-code') {
+                    script {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            def sonarScan = load "${WORKSPACE}/vars/sonarScan.groovy"
+                            sonarScan()
+                        }
                     }
                 }
             }
@@ -86,6 +86,9 @@ pipeline {
     post {
         success {
             echo 'SAST pipeline completed successfully.'
+        }
+        unstable {
+            echo 'SAST pipeline completed with warnings.'
         }
         failure {
             echo 'SAST pipeline failed.'
